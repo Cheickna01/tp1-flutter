@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:my_first_app/bloc/counter.bloc.dart';
 import 'package:my_first_app/pages/chat.page.dart';
 import 'package:my_first_app/pages/counter.page.dart';
 import 'package:my_first_app/pages/home.page.dart';
@@ -13,24 +15,27 @@ class MyApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      routes: {
-        "/": (context) => HomePage(),
-        "/counter": (context) => CounterPage(),
-        "/chat": (context) => ChatPage(),
-      },
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.deepOrange,
-          primary: Colors.deepOrange,
-          secondary: Colors.teal,
+    return MultiBlocProvider(
+      providers: [BlocProvider(create: (context) => CounterBloc())],
+      child: MaterialApp(
+        routes: {
+          "/": (context) => HomePage(),
+          "/counter": (context) => CounterPage(),
+          "/chat": (context) => ChatPage(),
+        },
+        title: 'Flutter Demo',
+        theme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: Colors.deepOrange,
+            primary: Colors.deepOrange,
+            secondary: Colors.teal,
+          ),
+          textTheme: TextTheme(
+            bodyLarge: TextStyle(fontSize: 44),
+            bodySmall: TextStyle(fontSize: 18),
+          ),
+          indicatorColor: Colors.white,
         ),
-        textTheme: TextTheme(
-          bodyLarge: TextStyle(fontSize: 44),
-          bodySmall: TextStyle(fontSize: 18),
-        ),
-        indicatorColor: Colors.white,
       ),
     );
   }

@@ -1,30 +1,12 @@
 import 'package:flutter/material.dart';
-
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../bloc/counter.bloc.dart';
 import '../widgets/appBar.widget.dart';
 import '../widgets/counter.button.widget.dart';
 import '../widgets/drawer.widget.dart';
 
-class CounterPage extends StatefulWidget {
-  const CounterPage({super.key});
-
-  @override
-  State<CounterPage> createState() => _CounterPageState();
-}
-
-class _CounterPageState extends State<CounterPage> {
-  int counter = 0;
-
-  void incrementCounter() {
-    setState(() {
-      counter++;
-    });
-  }
-
-  void decrementCounter() {
-    setState(() {
-      counter--;
-    });
-  }
+class CounterPage extends StatelessWidget {
+  CounterPage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -32,15 +14,25 @@ class _CounterPageState extends State<CounterPage> {
       appBar: const appBarWidgets(title: "Counter"),
       drawer: const drawerWidget(),
       body: Center(
-        child: Text(
-          "Counter value => $counter",
-          style: Theme.of(context).textTheme.bodyLarge,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            BlocBuilder<CounterBloc, CounterState>(
+              builder: (context, state) {
+                return Text(
+                  "Counter value => ${state.counter}",
+                  style: Theme.of(context).textTheme.bodyLarge,
+                );
+              },
+            ),
+          ],
         ),
       ),
       floatingActionButton: counterButtonWidget(
-        counter: counter,
-        onIncrement: incrementCounter,
-        onDecrement: decrementCounter,
+        onIncrement:
+            () => context.read<CounterBloc>().add(IncrementCounterEvent()),
+        onDecrement:
+            () => context.read<CounterBloc>().add(DecrementCounterEvent()),
       ),
     );
   }
