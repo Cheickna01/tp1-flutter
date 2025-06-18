@@ -1,19 +1,15 @@
 import 'dart:convert';
 
+import 'package:dwm_bot/bloc/chat.bot.bloc.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:http/http.dart' as http;
 
-class ChatbotPage extends StatefulWidget {
+class ChatbotPage extends StatelessWidget {
   ChatbotPage({super.key});
 
-  @override
-  State<ChatbotPage> createState() => _ChatbotPageState();
-}
-
-class _ChatbotPageState extends State<ChatbotPage> {
   TextEditingController messageController = TextEditingController();
   ScrollController scrollController = ScrollController();
-  var messages = [];
 
   @override
   Widget build(BuildContext context) {
@@ -37,40 +33,70 @@ class _ChatbotPageState extends State<ChatbotPage> {
       body: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Expanded(
-            child: ListView.builder(
-              controller: scrollController,
-              itemCount: messages.length,
-              itemBuilder: (context, index) {
+          BlocBuilder<ChatBotBloc, ChatBotState>(
+            builder: (context, state) {
+              if (state is ChatBotPendingState) {
+                return CircularProgressIndicator();
+              } else if (state is ChatBotErrorState) {
                 return Column(
                   children: [
-                    Row(
-                      children: [
-                        messages[index]["role"] == "user"
-                            ? SizedBox(width: 0)
-                            : SizedBox(width: 80),
-                        Expanded(
-                          child: Card.outlined(
-                            margin: EdgeInsets.all(6),
-                            color:
-                                (messages[index]["role"] == "assistant"
-                                    ? Colors.white
-                                    : Color.fromARGB(100, 0, 255, 0)),
-                            child: ListTile(
-                              title: Text("${messages[index]["content"]}"),
-                            ),
-                          ),
-                        ),
-                        messages[index]["role"] == "assistant"
-                            ? SizedBox(width: 0)
-                            : SizedBox(width: 80),
-                      ],
+                    Text(
+                      state.errorMessage,
+                      style: TextStyle(color: Colors.red),
                     ),
-                    Divider(),
+                    ElevatedButton(
+                      onPressed: () {
+                        ChatBotEvent evt =
+                            context.read<ChatBotBloc>().lastEvent;
+                        context.read<ChatBotBloc>().add(evt);
+                      },
+                      child: Text("Retry"),
+                    ),
                   ],
                 );
-              },
-            ),
+              } else if (state is ChatBotSuccessState ||
+                  state is ChatBotInitialState) {
+                return Expanded(
+                  child: ListView.builder(
+                    controller: scrollController,
+                    itemCount: state.messages.length,
+                    itemBuilder: (context, index) {
+                      return Column(
+                        children: [
+                          Row(
+                            children: [
+                              state.messages[index].role == "user"
+                                  ? SizedBox(width: 80)
+                                  : SizedBox(width: 0),
+                              Expanded(
+                                child: Card.outlined(
+                                  margin: EdgeInsets.all(6),
+                                  color:
+                                      (state.messages[index].role == "assistant"
+                                          ? Colors.white
+                                          : Color.fromARGB(100, 0, 255, 0)),
+                                  child: ListTile(
+                                    title: Text(
+                                      "${state.messages[index].message}",
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              state.messages[index].role == "assistant"
+                                  ? SizedBox(width: 0)
+                                  : SizedBox(width: 80),
+                            ],
+                          ),
+                          Divider(),
+                        ],
+                      );
+                    },
+                  ),
+                );
+              } else {
+                return Container();
+              }
+            },
           ),
           Padding(
             padding: const EdgeInsets.all(8.0),
@@ -95,39 +121,11 @@ class _ChatbotPageState extends State<ChatbotPage> {
                 IconButton(
                   onPressed: () {
                     String message = messageController.text;
-                    setState(() {
-                      messages.add({"role": "user", "content": message});
-                    });
+                    context.read<ChatBotBloc>().add(askLLM(message: message));
+                    messageController.text = "";
                     scrollController.jumpTo(
                       scrollController.position.maxScrollExtent + 800,
                     );
-                    // pour openAI Uri uri = Uri.parse("http://api.openai.com/v1/chat/completions",);
-                    Uri uri = Uri.parse(
-                      "http://localhost:11434/v1/chat/completions",
-                    );
-                    var headers = {"Content-Type": "application/json"};
-                    // pour openAI var body = {"model": "gpt-4o", "messages": messages};
-                    var body = {"model": "llama3.2", "messages": messages};
-
-                    http
-                        .post(uri, headers: headers, body: json.encode(body))
-                        .then((res) {
-                          var aiResponse = json.decode(res.body);
-                          String reponse =
-                              aiResponse["choices"][0]["message"]["content"];
-                          setState(() {
-                            messages.add({
-                              "role": "assistant",
-                              "content": reponse,
-                            });
-                          });
-                          scrollController.jumpTo(
-                            scrollController.position.maxScrollExtent + 800,
-                          );
-                        })
-                        .catchError((e) {
-                          print(e);
-                        });
                   },
                   icon: Icon(Icons.send),
                 ),
